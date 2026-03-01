@@ -1,0 +1,12 @@
+export interface ITask {
+  id: string;
+  title: string;
+  desciption: string;
+  status: TaskStatus;
+}
+
+export enum TaskStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  DONE = 'DONE',
+}
