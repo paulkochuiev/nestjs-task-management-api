@@ -15,6 +15,7 @@ import type { ITask } from './task.model';
 import { CreateTaskDto } from './create-task.dto';
 import { FindOneParams } from './find-one.params';
 import { UpdateTaskStatusDto } from './update-task-status.dto';
+import { UpdateTaskDto } from './update-task.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -38,12 +39,22 @@ export class TasksController {
   @Patch('/:id/status')
   public updateTaskStatus(
     @Param() params: FindOneParams,
-    @Body() body: UpdateTaskStatusDto,
+    @Body() updateTaskDto: UpdateTaskStatusDto,
   ): ITask {
     const task = this.findOneOrFail(params.id);
-    task.status = body.status;
+    task.status = updateTaskDto.status;
 
     return task;
+  }
+
+  @Patch('/:id')
+  public updateTask(
+    @Param() params: FindOneParams,
+    @Body() updateTaskDto: UpdateTaskDto,
+  ): ITask {
+    const task = this.findOneOrFail(params.id);
+
+    return this.tasksService.updateTask(task, updateTaskDto);
   }
 
   @Delete('/:id')
@@ -51,7 +62,7 @@ export class TasksController {
   public deleteTask(@Param() params: FindOneParams): void {
     const task = this.findOneOrFail(params.id);
 
-    this.tasksService.deleteTask(task.id);
+    this.tasksService.deleteTask(task);
   }
 
   private findOneOrFail(id: string): ITask {
