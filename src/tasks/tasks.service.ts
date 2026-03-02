@@ -15,7 +15,7 @@ export class TasksService {
     return this.tasks.find((task) => task.id === id);
   }
 
-  create(createTaskDto: CreateTaskDto): ITask {
+  public create(createTaskDto: CreateTaskDto): ITask {
     const task: ITask = {
       id: randomUUID(),
       ...createTaskDto,
@@ -24,5 +24,9 @@ export class TasksService {
     this.tasks.push(task);
 
     return task;
+  }
+
+  public deleteTask(id: string): void {
+    this.tasks = this.tasks.filter((task) => task.id !== id);
   }
 }
