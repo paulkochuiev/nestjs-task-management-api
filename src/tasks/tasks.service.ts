@@ -3,7 +3,7 @@ import { TaskStatus } from './task.model';
 import { CreateTaskDto } from './create-task.dto';
 import { UpdateTaskDto } from './update-task.dto';
 import { WrongTaskStatusException } from './exceptions/wrong-task-status.exception';
-import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Task } from './task.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTaskLabelDto } from './create-task-label.dto';
@@ -25,23 +25,35 @@ export class TasksService {
     filters: FindTaskParams,
     pagination: PaginationParams,
   ): Promise<[Task[], number]> {
-    const where: FindOptionsWhere<Task> = {};
+    const query = this.tasksRepository
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.labels', 'labels');
 
     if (filters.status) {
-      where.status = filters.status;
+      query.andWhere('task.status = :status', { status: filters.status });
     }
 
     if (filters.search?.trim()) {
-      where.title = Like(`%${filters.search}%`);
-      where.description = Like(`%${filters.search}%`);
+      query.andWhere('task.title ILIKE :search OR task,description ILIKE', {
+        search: `%${filters.search}%`,
+      });
     }
 
-    return await this.tasksRepository.findAndCount({
-      where,
-      relations: ['labels'],
-      skip: pagination.offset,
-      take: pagination.limit,
-    });
+    if (filters.labels?.length) {
+      const subQuery = query
+        .subQuery()
+        .select('labels.taskId')
+        .from('task_label', 'labels')
+        .where('labels.name IN (:...names)', { names: filters.labels })
+        .getQuery();
+
+      query.andWhere(`task.id IN ${subQuery}`);
+    }
+
+    query.orderBy(`task.${filters.sortBy}`, filters.sortOrder);
+
+    query.skip(pagination.offset).take(pagination.limit);
+    return query.getManyAndCount();
   }
 
   public async findOne(id: string): Promise<Task | null> {
