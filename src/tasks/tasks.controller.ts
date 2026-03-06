@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './create-task.dto';
@@ -19,14 +20,15 @@ import { UpdateTaskDto } from './update-task.dto';
 import { WrongTaskStatusException } from './exceptions/wrong-task-status.exception';
 import { Task } from './task.entity';
 import { CreateTaskLabelDto } from './create-task-label.dto';
+import { FindTaskParams } from './find-task.params';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  public async findAll(): Promise<Task[]> {
-    return await this.tasksService.findAll();
+  public async findAll(@Query() filters: FindTaskParams): Promise<Task[]> {
+    return await this.tasksService.findAll(filters);
   }
 
   @Get('/:id')
@@ -84,6 +86,17 @@ export class TasksController {
     const task = await this.findOneOrFail(id);
 
     return await this.tasksService.addLabels(task, labels);
+  }
+
+  @Delete('/:id/labels')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeLabels(
+    @Param() { id }: FindOneParams,
+    @Body() labelNames: string[],
+  ): Promise<void> {
+    const task = await this.findOneOrFail(id);
+
+    await this.tasksService.removeLabels(task, labelNames);
   }
 
   private async findOneOrFail(id: string): Promise<Task> {
